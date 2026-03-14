@@ -51,7 +51,7 @@ export function updateBreakeven(breakevenAge, age) {
   } else if (breakevenAge === age) {
     bvEl.textContent = 'Bereits jetzt möglich';
     bvEl.className = 'breakeven-value now';
-    bsEl.textContent = 'ETF-Restwert bei 67 deckt die Rentenlücke schon heute';
+    bsEl.textContent = 'ETF-Restwert deckt die Rentenlücke schon heute';
   } else {
     bvEl.textContent = `Alter ${breakevenAge}`;
     bvEl.className = 'breakeven-value now';
@@ -162,7 +162,21 @@ export function updateHintRpj1(params) {
 
 /** Update all other hints (verbleib, ETF-Entnahme, Realrendite). NOT RPJ. */
 export function updateHints(params) {
-  const { netto, spar, extra, need, retBrutto, tax, inf } = params;
+  const { netto, spar, extra, need, retBrutto, tax, inf, grvStartAge } = params;
+
+  // GRV Frührente Abzug hint
+  const hintGrvAbzug = document.getElementById('hint-grv-abzug');
+  if (hintGrvAbzug) {
+    if (grvStartAge < GRV_AGE) {
+      const months = (GRV_AGE - grvStartAge) * 12;
+      const abzug  = months * 0.003 * 100;
+      hintGrvAbzug.style.display = 'block';
+      hintGrvAbzug.innerHTML =
+        `<span style="color:var(--yellow)">⚠ Dauerhafte Kürzung: ${months} Monate × 0,3% = <strong>−${abzug.toFixed(1)}%</strong> der Rente</span>`;
+    } else {
+      hintGrvAbzug.style.display = 'none';
+    }
+  }
 
   // Verbleib nach Sparrate
   const hintVerbleib = document.getElementById('hint-verbleib');
@@ -219,9 +233,10 @@ export function renderTable(scenarios, breakevenAge, onRowClick) {
     const isBreakeven = breakevenAge !== null && retireAge === breakevenAge && !isSofort;
     const pctPrimary  = s.p2pctReal;
     const [tagClass, tagText] = getTag(pctPrimary);
+    const { grvStartAge } = s;
     const retireSub = isSofort
-      ? `Sofort · ${yearsTo67} J. bis GRV`
-      : `in ${yearsToRetire} J. · ${yearsTo67} J. bis GRV`;
+      ? `Sofort · ${yearsTo67} J. bis Rente (${grvStartAge})`
+      : `in ${yearsToRetire} J. · ${yearsTo67} J. bis Rente (${grvStartAge})`;
 
     const tr = document.createElement('tr');
     if (isSofort)    tr.classList.add('sofort-row');
@@ -237,7 +252,7 @@ export function renderTable(scenarios, breakevenAge, onRowClick) {
             : `<span class="tag ${tagClass}">${tagText}</span>`}
       </td>
       <td class="c-kap"><div class="val-main" style="color:var(--purple)">${fmt(s.rpAtRetire,1)} Pkt</div><div class="val-sub">bei Übergangsphase</div></td>
-      <td class="c-kap"><div class="val-main" style="color:var(--purple)">${fmt(s.rpAt67,1)} Pkt</div><div class="val-sub">bei 67 (inkl. P1)</div></td>
+      <td class="c-kap"><div class="val-main" style="color:var(--purple)">${fmt(s.rpAt67,1)} Pkt</div><div class="val-sub">bei ${s.grvStartAge} (inkl. P1)</div></td>
       <td class="phase-sep-td p1"></td>
       <td class="c-kauf"><div class="val-main">${fmt(s.kaufNomRetire)} €</div><div class="val-sub">/Mo</div></td>
       <td class="c-kauf"><div class="val-main">${fmt(s.need)} €</div><div class="val-sub">/Mo · konstant</div></td>
@@ -248,13 +263,13 @@ export function renderTable(scenarios, breakevenAge, onRowClick) {
       <td class="c-etf"><div class="val-main" style="color:${col(s.p1pctNom)}">${fmt(s.etfRetireNom)} €</div><div class="bar-wrap"><div class="bar-fill" style="width:${s.p1pctNom.toFixed(1)}%;background:${col(s.p1pctNom)}"></div></div><div class="val-sub">${fmt(s.p1pctNom,0)}% Ziel</div></td>
       <td class="c-etf"><div class="val-main" style="color:${col(s.p1pctReal)}">${fmt(s.etfRetireReal)} €</div><div class="bar-wrap"><div class="bar-fill" style="width:${s.p1pctReal.toFixed(1)}%;background:${col(s.p1pctReal)}"></div></div><div class="val-sub">${fmt(s.p1pctReal,0)}% Ziel</div></td>
       <td class="phase-sep-td p2"></td>
-      <td class="c-kauf"><div class="val-main">${fmt(s.kaufNom67)} €</div><div class="val-sub">/Mo ab 67</div></td>
+      <td class="c-kauf"><div class="val-main">${fmt(s.kaufNom67)} €</div><div class="val-sub">/Mo ab ${s.grvStartAge}</div></td>
       <td class="c-kauf"><div class="val-main">${fmt(s.need2)} €</div><div class="val-sub">/Mo · konstant</div></td>
       <td class="c-grv"><div class="val-main" style="color:var(--purple)">${fmt(s.grvNettoNom)} €</div><div class="val-sub">/Mo · ${s.zusatz>0?`+${fmt(s.zusatz)} € Zusatz`:''}</div></td>
       <td class="c-grv"><div class="val-main" style="color:var(--purple)">${fmt(s.grvNettoReal)} €</div><div class="val-sub">/Mo real · deckt ${fmt(s.need2>0?Math.min(100,(s.grvNettoReal/s.need2)*100):0,0)}%</div></td>
-      <td class="c-rluck"><div class="val-main" style="color:var(--yellow)">${fmt(s.rentenlueckeNomMonth)} €</div><div class="val-sub">/Mo ab 67</div></td>
+      <td class="c-rluck"><div class="val-main" style="color:var(--yellow)">${fmt(s.rentenlueckeNomMonth)} €</div><div class="val-sub">/Mo ab ${s.grvStartAge}</div></td>
       <td class="c-rluck"><div class="val-main" style="color:var(--yellow)">${fmt(s.rentenlueckeRealMonth)} €</div><div class="val-sub">/Mo real</div></td>
-      <td class="c-kap"><div class="val-main" style="color:var(--blue)">${fmt(s.cap2_at67_nom)} €</div><div class="val-sub">bei 67 benötigt</div></td>
+      <td class="c-kap"><div class="val-main" style="color:var(--blue)">${fmt(s.cap2_at67_nom)} €</div><div class="val-sub">bei ${s.grvStartAge} benötigt</div></td>
       <td class="c-kap"><div class="val-main" style="color:var(--blue)">${fmt(s.cap2_at67_real)} €</div><div class="val-sub">in heutigen €</div></td>
       <td class="c-etf"><div class="val-main" style="color:${col(s.p2pctNom)}">${fmt(Math.max(0,s.etfRes67Nom))} €</div><div class="bar-wrap"><div class="bar-fill" style="width:${s.p2pctNom.toFixed(1)}%;background:${col(s.p2pctNom)}"></div></div><div class="val-sub">${fmt(s.p2pctNom,0)}% Ziel</div></td>
       <td class="c-etf"><div class="val-main" style="color:${col(s.p2pctReal)}">${fmt(Math.max(0,s.etfRes67Real))} €</div><div class="bar-wrap"><div class="bar-fill" style="width:${s.p2pctReal.toFixed(1)}%;background:${col(s.p2pctReal)}"></div></div><div class="val-sub">${fmt(s.p2pctReal,0)}% Ziel</div></td>
@@ -273,7 +288,7 @@ export function renderCards(scenarios, breakevenAge, onCardClick) {
   container.innerHTML = '';
 
   scenarios.forEach(s => {
-    const { retireAge, age, yearsToRetire, yearsTo67 } = s;
+    const { retireAge, age, yearsToRetire, yearsTo67, grvStartAge } = s;
     const isSofort    = retireAge === age;
     const isBreakeven = breakevenAge !== null && retireAge === breakevenAge && !isSofort;
     const [tagClass, tagText] = getTag(s.p2pctReal);
@@ -293,7 +308,7 @@ export function renderCards(scenarios, breakevenAge, onCardClick) {
       <div class="card-header">
         <div>
           <div class="card-age">${isSofort ? age : retireAge}</div>
-          <div class="card-sub">${isSofort ? 'Sofort' : `in ${yearsToRetire} Jahr${yearsToRetire===1?'':'en'}`} · ${yearsTo67} J. bis GRV</div>
+          <div class="card-sub">${isSofort ? 'Sofort' : `in ${yearsToRetire} Jahr${yearsToRetire===1?'':'en'}`} · ${yearsTo67} J. bis Rente (${grvStartAge})</div>
         </div>
         <div class="card-badge">${badgeHtml}</div>
       </div>
@@ -309,12 +324,12 @@ export function renderCards(scenarios, breakevenAge, onCardClick) {
         </div>
 
         <div class="card-metric">
-          <div class="card-metric-label">ETF-Restwert bei 67</div>
+          <div class="card-metric-label">ETF-Restwert bei ${grvStartAge}</div>
           <div class="card-metric-value" style="color:${col(s.p2pctReal)}">${fmt(Math.max(0,s.etfRes67Real))} €</div>
           <div class="bar-wrap" style="margin-top:0.35rem">
             <div class="bar-fill" style="width:${s.p2pctReal.toFixed(1)}%;background:${col(s.p2pctReal)}"></div>
           </div>
-          <div class="card-metric-sub">${fmt(s.p2pctReal,0)}% des Ziels (${fmt(s.cap2_at67_real)} € benötigt)</div>
+          <div class="card-metric-sub">${fmt(s.p2pctReal,0)}% des Ziels (${fmt(s.cap2_at67_real)} € bei ${grvStartAge} benötigt)</div>
         </div>
 
         <div class="card-gap-row">
@@ -323,7 +338,7 @@ export function renderCards(scenarios, breakevenAge, onCardClick) {
             <span class="card-gap-value" style="color:${gapCol(s.p2gapReal,s.p2pctReal)}">${fmtGap(s.p2gapReal)}</span>
           </div>
           <div class="card-gap-item">
-            <span class="card-gap-label">Rente ab 67</span>
+            <span class="card-gap-label">Rente ab ${grvStartAge}</span>
             <span class="card-gap-value" style="color:var(--purple)">${fmt(s.grvNettoReal)} €/Mo</span>
           </div>
         </div>
@@ -348,7 +363,7 @@ export function renderVerif(data) {
   document.getElementById('verif-panel')?.classList.add('visible');
 
   const {
-    age, retireAge, yearsToRetire, yearsTo67,
+    age, retireAge, yearsToRetire, yearsTo67, grvStartAge,
     ret, inf, spar, etf0: etf0raw,
     need, extra, need2, zusatz, ent, ohne,
     rpAtRetire, rpAt67, rpWert67, rpj1,
@@ -359,6 +374,7 @@ export function renderVerif(data) {
     etfRetireNom, etfRes67Nom, etfRes67Real,
     cap2_at67_nom, cap2_at67_real,
     inflToRetire, inflTo67, retReal, yearsP2,
+    zugangsfaktor, monthsEarly,
   } = data;
 
   const etf0 = etf0raw ?? 0;
@@ -382,7 +398,8 @@ export function renderVerif(data) {
       steps: [
         [`Punkte heute + Phase 0`, `${fmtV(rpAtRetire,1)} Pkt bei Übergangsphase`, true],
         [`+ ${yearsTo67} J. Phase 1`, `+ ${fmtV(yearsTo67*(rpj1??0),1)} Pkt`],
-        [`= Punkte bei 67`, `${fmtV(rpAt67,1)} Pkt`, true],
+        [`= Punkte bei ${grvStartAge}`, `${fmtV(rpAt67,1)} Pkt`, true],
+        ...(monthsEarly > 0 ? [[`Zugangsfaktor (${monthsEarly} Mo. früher × 0,3%)`, `× ${fmtV(zugangsfaktor,4)} = −${fmtV((1-zugangsfaktor)*100,1)}%`]] : []),
       ],
       hint: 'Rentenpunktwert 2025: 40,79 € × 1,5% Wachstum p.a.'
     },
@@ -402,24 +419,25 @@ export function renderVerif(data) {
     },
     // ── Phase 2 (lila) ────────────────────────────────────────────────────────
     {
-      title: 'Phase 2 · Benötigtes Kapital bei 67',
+      title: `Phase 2 · Benötigtes Kapital bei ${grvStartAge}`,
       color: 'var(--purple)',
       steps: [
-        [`Monatsbedarf ab 67 (real)`, `${fmtV(need2)} €/Mo`],
+        [`Monatsbedarf ab ${grvStartAge} (real)`, `${fmtV(need2)} €/Mo`],
         [`− GRV netto real (heutige €)`, `− ${fmtV(grvNettoReal)} €/Mo`],
         [`= Rentenlücke real`, `${fmtV(rentenlueckeRealMonth)} €/Mo · ${fmtV(rentenlueckeRealMonth*12)} €/J.`, true],
         ohne
           ? [`÷ Entnahmerate ${fmtV(ent*100,1)}%`, `= ${fmtV(rentenlueckeRealMonth*12/ent)} €`]
           : [`Barwert über ${yearsP2} J. (reale Nettorendite)`, `= ${fmtV(cap2_at67_real)} €`],
         [`= Benötigtes Kapital (real, heute €)`, `${fmtV(cap2_at67_real)} €`, true],
-        [`= Benötigtes Kapital (nominal bei 67)`, `${fmtV(cap2_at67_nom)} €`],
+        [`= Benötigtes Kapital (nominal bei ${grvStartAge})`, `${fmtV(cap2_at67_nom)} €`],
       ]
     },
     {
-      title: 'Phase 2 · GRV netto bei 67',
+      title: `Phase 2 · GRV netto bei ${grvStartAge}`,
       color: 'var(--purple)',
       steps: [
-        [`${fmtV(rpAt67,1)} Pkt × ${fmtV(rpWert67,2)} €/Pkt (Rentenwert bei 67)`, `= ${fmtV(grvBruttoNom)} € brutto`],
+        [`${fmtV(rpAt67,1)} Pkt × ${fmtV(rpWert67,2)} €/Pkt (Rentenwert bei ${grvStartAge})`, `= ${fmtV(grvBruttoNom / zugangsfaktor)} € (vor Abzug)`],
+        ...(monthsEarly > 0 ? [[`× Zugangsfaktor ${fmtV(zugangsfaktor,4)} (−${fmtV((1-zugangsfaktor)*100,1)}%)`, `= ${fmtV(grvBruttoNom)} € brutto`]] : [[`= Brutto`, `${fmtV(grvBruttoNom)} €`]]),
         [`× 89,5% (nach KV + PV-Beitrag)`, `= ${fmtV(grvBruttoNom*GRV_NET_PCT)} €`],
         ...(zusatz > 0 ? [[`+ Zusatzrente (nominal)`, `+ ${fmtV(zusatz)} €`]] : []),
         [`= Rente gesamt netto/Mo (nominal)`, `${fmtV(grvNettoNom)} €`, true],
@@ -428,14 +446,14 @@ export function renderVerif(data) {
       hint: `Deckt ${fmtV(need2>0?Math.min(100,(grvNettoReal/need2)*100):0,0)}% des Bedarfs in Phase 2`
     },
     {
-      title: 'ETF-Restwert bei 67 · Kern-Check',
+      title: `ETF-Restwert bei ${grvStartAge} · Kern-Check`,
       color: 'var(--purple)',
       steps: [
         [`ETF bei Übergangsphase (nominal)`, `${fmtV(etfRetireNom)} €`],
         [`Wächst ${yearsTo67} J. mit ${fmtV(ret*100,1)}% Rendite`, `× ${fmtV(Math.pow(1+ret,yearsTo67),3)}`],
         [`− Entnahmen Phase 1 (wachsen mit Inflation)`, `− ...`],
-        [`= ETF-Restwert bei 67 (nominal)`, `${fmtV(etfRes67Nom)} €`, true],
-        [`= ETF-Restwert bei 67 (real, heute €)`, `${fmtV(etfRes67Real)} €`, true],
+        [`= ETF-Restwert bei ${grvStartAge} (nominal)`, `${fmtV(etfRes67Nom)} €`, true],
+        [`= ETF-Restwert bei ${grvStartAge} (real, heute €)`, `${fmtV(etfRes67Real)} €`, true],
         [`Benötigtes Kapital Phase 2 (nominal)`, `${fmtV(cap2_at67_nom)} €`],
         etfRes67Nom >= cap2_at67_nom
           ? [`✓ Überschuss`, `+${fmtV(etfRes67Nom - cap2_at67_nom)} €`, true]

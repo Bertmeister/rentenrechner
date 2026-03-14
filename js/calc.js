@@ -11,6 +11,7 @@ export const DURCHSCHNITTSENTGELT = 51944; // vorläufiger Wert 2026
 export const MINIJOB_GRENZE    = 538;
 export const RV_BEITRAGSSATZ   = 0.186;
 export const MINIJOB_AG_ANTEIL = 0.15;
+export const ABZUG_PRO_MONAT   = 0.003; // 0,3% je Monat Frührente vor 67
 
 /** ETF future value with monthly savings (annual compounding) */
 export function etfFV(etf0, sparMo, r, years) {
@@ -109,30 +110,35 @@ export function getParams() {
     durchschnittsentgelt,
     isMinijob,
     minijobAufstockung,
+    grvStartAge: parseInt(document.getElementById('sel-grv-start')?.value) || GRV_AGE,
   };
 }
 
 /** Compute all values for a single retirement scenario */
 export function calcScenario(params, retireAge) {
   const { age, life, need, etf0, inf, ret, ent, rp0, rpj0, rpj1,
-          spar, extra, need2, zusatz, ohne, einmal } = params;
+          spar, extra, need2, zusatz, ohne, einmal, grvStartAge = GRV_AGE } = params;
 
   const retReal = (1 + ret) / (1 + inf) - 1;
   const yearsToRetire  = Math.max(0, retireAge - age);
-  const yearsTo67      = Math.max(0, GRV_AGE - retireAge);
-  const yearsP2        = Math.max(0, life - GRV_AGE);
-  const yearsTo67Total = yearsToRetire + yearsTo67;
+  const yearsToGrv     = Math.max(0, grvStartAge - retireAge);  // Phase 1 Dauer
+  const yearsP2        = Math.max(0, life - grvStartAge);
+  const yearsToGrvTotal = yearsToRetire + yearsToGrv;
 
   const inflToRetire = Math.pow(1 + inf, yearsToRetire);
-  const inflTo67     = Math.pow(1 + inf, yearsTo67Total);
-  const rpWert67     = RP_BASE * Math.pow(1 + RP_GROW, GRV_AGE - age);
+  const inflTo67     = Math.pow(1 + inf, yearsToGrvTotal);      // inflToGrv, _67 name kept for compat
+  const rpWert67     = RP_BASE * Math.pow(1 + RP_GROW, grvStartAge - age);
 
   // GRV points
   const rpAtRetire = rp0 + yearsToRetire * rpj0;
-  const rpAt67     = rpAtRetire + yearsTo67 * rpj1;
+  const rpAt67     = rpAtRetire + yearsToGrv * rpj1;            // points at GRV start
 
-  // GRV at 67
-  const grvBruttoNom = rpAt67 * rpWert67;
+  // Zugangsfaktor (0,3% Abzug je Monat vor 67)
+  const monthsEarly   = Math.max(0, (GRV_AGE - grvStartAge) * 12);
+  const zugangsfaktor = 1 - ABZUG_PRO_MONAT * monthsEarly;
+
+  // GRV at grvStartAge
+  const grvBruttoNom = rpAt67 * rpWert67 * zugangsfaktor;
   const grvNettoNom  = grvBruttoNom * GRV_NET_PCT + zusatz;
   const grvNettoReal = grvNettoNom / inflTo67;
 
@@ -163,16 +169,16 @@ export function calcScenario(params, retireAge) {
   });
   const etfRetireReal = etfRetireNom / inflToRetire;
 
-  // Required capital Phase 2 at 67 (real today's €)
+  // Required capital Phase 2 at grvStartAge (real today's €)
   const cap2_at67_real = calcP2_atAge67_real(rentenlueckeRealAnnual, retReal, ent, yearsP2, ohne);
   const cap2_at67_nom  = cap2_at67_real * inflTo67;
 
   // Required capital at Übergangsphase (real today's €)
-  const cap1_atRetire_real = calcP1_atRetire_real(lueckeRealAnnual, cap2_at67_real, retReal, ent, yearsTo67, ohne);
+  const cap1_atRetire_real = calcP1_atRetire_real(lueckeRealAnnual, cap2_at67_real, retReal, ent, yearsToGrv, ohne);
   const cap1_atRetire_nom  = cap1_atRetire_real * inflToRetire;
 
-  // ETF residual at 67 (nominal)
-  const etfRes67Nom  = etfResidualAt67(etfRetireNom, lueckeNomAnnual_yr1, ret, inf, yearsTo67);
+  // ETF residual at grvStartAge (nominal)
+  const etfRes67Nom  = etfResidualAt67(etfRetireNom, lueckeNomAnnual_yr1, ret, inf, yearsToGrv);
   const etfRes67Real = etfRes67Nom / inflTo67;
 
   // Percentages for display
@@ -185,10 +191,11 @@ export function calcScenario(params, retireAge) {
   const p2gapReal = etfRes67Real - cap2_at67_real;
 
   return {
-    retireAge, age,
-    yearsToRetire, yearsTo67, yearsP2,
+    retireAge, age, grvStartAge,
+    yearsToRetire, yearsTo67: yearsToGrv, yearsP2,
     inflToRetire, inflTo67, retReal,
     rpWert67, rpAtRetire, rpAt67,
+    zugangsfaktor, monthsEarly,
     grvBruttoNom, grvNettoNom, grvNettoReal,
     kaufNomRetire, kaufNom67,
     extraNomRetire,
