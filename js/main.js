@@ -2,7 +2,7 @@
  * main.js – Entry point: event wiring, recalc loop, modal/tab management
  */
 
-import { getParams, calcAll, DURCHSCHNITTSENTGELT } from './calc.js';
+import { getParams, calcAll } from './calc.js';
 import {
   renderTable, renderCards, renderVerif,
   updateBreakeven, updateHints, updateHintRpj0, updateHintRpj1,
@@ -14,6 +14,7 @@ import {
 } from './scenarios.js';
 
 // ── GLOBAL STATE ──────────────────────────────────────────────────────────────
+const AUTOSAVE_KEY = 'rentenplanung-autosave';
 window._einmalCount = 0;
 const MAX_EINMAL = 3;
 let selectedRow  = null;
@@ -61,6 +62,11 @@ export function recalc() {
   if (vi && !document.getElementById('verif-panel')?.classList.contains('visible')) {
     vi.classList.add('visible');
   }
+
+  // Auto-save current state
+  try {
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(captureValues()));
+  } catch (e) {}
 }
 
 // ── EINMALZAHLUNGEN ───────────────────────────────────────────────────────────
@@ -127,12 +133,13 @@ const inputPairs = [
   ['inp-rpj1','sl-rpj1'],['inp-spar','sl-spar'],['inp-extra','sl-extra'],
   ['inp-need2','sl-need2'],['inp-zusatz','sl-zusatz'],
   ['inp-netto','sl-netto'],['inp-abgaben','sl-abgaben'],
+  ['inp-durchschnittsentgelt','sl-durchschnittsentgelt'],
 ];
 
 // RPJ0 aktualisiert sich NUR bei Nettogehalt- oder Abgabenquote-Änderung
-const rpj0Triggers = new Set(['inp-netto', 'sl-netto', 'inp-abgaben', 'sl-abgaben']);
+const rpj0Triggers = new Set(['inp-netto', 'sl-netto', 'inp-abgaben', 'sl-abgaben', 'inp-durchschnittsentgelt', 'sl-durchschnittsentgelt']);
 // RPJ1 aktualisiert sich NUR bei Nebeneinkommen- oder Abgabenquote-Änderung
-const rpj1Triggers = new Set(['inp-extra', 'sl-extra', 'inp-abgaben', 'sl-abgaben']);
+const rpj1Triggers = new Set(['inp-extra', 'sl-extra', 'inp-abgaben', 'sl-abgaben', 'inp-durchschnittsentgelt', 'sl-durchschnittsentgelt']);
 
 function wireInputs() {
   inputPairs.forEach(([a, b]) => {
@@ -161,6 +168,23 @@ function wireInputs() {
     document.getElementById('grp-ent')?.classList.toggle('dimmed',  !ohne);
     recalc();
   });
+
+  document.getElementById('chk-minijob')?.addEventListener('change', () => {
+    const checked = document.getElementById('chk-minijob').checked;
+    const lblAuf = document.getElementById('lbl-aufstockung');
+    if (lblAuf) lblAuf.style.display = checked ? 'flex' : 'none';
+    if (!checked) {
+      const chkAuf = document.getElementById('chk-minijob-aufstockung');
+      if (chkAuf) chkAuf.checked = false;
+    }
+    updateHintRpj1(getParams());
+    recalc();
+  });
+
+  document.getElementById('chk-minijob-aufstockung')?.addEventListener('change', () => {
+    updateHintRpj1(getParams());
+    recalc();
+  });
 }
 
 // ── TABS (mobile) ─────────────────────────────────────────────────────────────
@@ -184,6 +208,47 @@ window.toggleInputs = function() {
   const open  = !panel.classList.contains('collapsed');
   panel.classList.toggle('collapsed', open);
   icon.textContent = open ? '▼' : '▲';
+};
+
+// ── RESET TO DEFAULTS ─────────────────────────────────────────────────────────
+window.resetToDefaults = function() {
+  try { localStorage.removeItem(AUTOSAVE_KEY); } catch (e) {}
+
+  // Reset all standard number inputs + sliders to their HTML default values
+  document.querySelectorAll('input[type="number"][id^="inp-"]').forEach(inp => {
+    inp.value = inp.defaultValue;
+    const sl = document.getElementById(inp.id.replace('inp-', 'sl-'));
+    if (sl) sl.value = inp.defaultValue;
+  });
+
+  // Reset toggle-mode checkbox
+  const toggleMode = document.getElementById('toggle-mode');
+  if (toggleMode) toggleMode.checked = true;
+
+  // Reset Minijob checkboxes
+  const chkMj = document.getElementById('chk-minijob');
+  if (chkMj) chkMj.checked = false;
+  const chkAuf = document.getElementById('chk-minijob-aufstockung');
+  if (chkAuf) chkAuf.checked = false;
+  const lblAuf = document.getElementById('lbl-aufstockung');
+  if (lblAuf) lblAuf.style.display = 'none';
+
+  // Remove Einmalzahlungen
+  document.querySelectorAll('.einmal-block').forEach(b => b.remove());
+  window._einmalCount = 0;
+  const addBtn = document.getElementById('einmal-add-btn');
+  if (addBtn) addBtn.style.display = '';
+
+  // Restore mode badge state
+  document.getElementById('grp-life')?.classList.toggle('dimmed', true);
+  document.getElementById('grp-ent')?.classList.toggle('dimmed', false);
+  document.getElementById('lbl-verzehr')?.classList.toggle('active', false);
+  document.getElementById('lbl-erhalt')?.classList.toggle('active', true);
+
+  const p = getParams();
+  updateHintRpj0(p);
+  updateHintRpj1(p);
+  recalc();
 };
 
 // ── THEME ─────────────────────────────────────────────────────────────────────
@@ -442,13 +507,29 @@ function init() {
     switchTab('tab-results');
   }
 
-  // Initialize RPJ hints once from default input values
-  const initParams = getParams();
-  updateHintRpj0(initParams);
-  updateHintRpj1(initParams);
+  // Restore auto-saved state (if present)
+  let restoredFromAutosave = false;
+  try {
+    const saved = localStorage.getItem(AUTOSAVE_KEY);
+    if (saved) {
+      const v = JSON.parse(saved);
+      applyValues(v, window.addEinmal, recalc, () => {
+        const p = getParams();
+        updateHintRpj0(p);
+        updateHintRpj1(p);
+      });
+      restoredFromAutosave = true;
+    }
+  } catch (e) {}
 
-  // First run
-  recalc();
+  if (!restoredFromAutosave) {
+    // Initialize RPJ hints once from default input values
+    const initParams = getParams();
+    updateHintRpj0(initParams);
+    updateHintRpj1(initParams);
+    // First run
+    recalc();
+  }
 
   // Show onboarding
   try {

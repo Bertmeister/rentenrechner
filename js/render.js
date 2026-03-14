@@ -2,7 +2,7 @@
  * render.js – DOM rendering functions
  */
 
-import { GRV_AGE, GRV_NET_PCT, DURCHSCHNITTSENTGELT } from './calc.js';
+import { GRV_AGE, GRV_NET_PCT, MINIJOB_AG_ANTEIL, RV_BEITRAGSSATZ } from './calc.js';
 
 export function fmt(n, dec = 0) {
   if (isNaN(n) || !isFinite(n)) return '–';
@@ -65,7 +65,7 @@ export function updateBreakeven(breakevenAge, age) {
  * Call ONLY when Nettogehalt (inp-netto) or Abgabenquote (inp-abgaben) changes.
  */
 export function updateHintRpj0(params) {
-  const { netto, abgaben } = params;
+  const { netto, abgaben, durchschnittsentgelt } = params;
   const hintBrutto = document.getElementById('hint-brutto');
   const hintRpj0   = document.getElementById('hint-rpj0');
   const rpj0El     = document.getElementById('inp-rpj0');
@@ -74,7 +74,7 @@ export function updateHintRpj0(params) {
   if (netto > 0 && abgaben > 0) {
     const brutto       = netto / (1 - abgaben / 100);
     const jahresbrutto = Math.round(brutto * 12);
-    const vorschlag    = Math.round((jahresbrutto / DURCHSCHNITTSENTGELT) * 100) / 100;
+    const vorschlag    = Math.round((jahresbrutto / durchschnittsentgelt) * 100) / 100;
     const capped       = Math.min(vorschlag, 2);
     if (rpj0El) rpj0El.value = capped;
     if (slRpj0) slRpj0.value = capped;
@@ -82,7 +82,7 @@ export function updateHintRpj0(params) {
       hintRpj0.style.display = 'block';
       hintRpj0.innerHTML =
         `Brutto ~${fmt(Math.round(brutto))} €/Mo (${abgaben}% Abgaben)<br>` +
-        `<span style="color:var(--teal)">${fmt(Math.round(brutto))} × 12 ÷ ${fmt(DURCHSCHNITTSENTGELT)} ` +
+        `<span style="color:var(--teal)">${fmt(Math.round(brutto))} × 12 ÷ ${fmt(durchschnittsentgelt)} ` +
         `= <strong>${capped} Pkt/Jahr</strong></span>`;
     }
     if (hintBrutto) {
@@ -103,24 +103,55 @@ export function updateHintRpj0(params) {
  * Call ONLY when Nebeneinkommen (inp-extra) or Abgabenquote (inp-abgaben) changes.
  */
 export function updateHintRpj1(params) {
-  const { extra, abgaben } = params;
+  const { extra, abgaben, durchschnittsentgelt, isMinijob, minijobAufstockung } = params;
   const hintRpj1 = document.getElementById('hint-rpj1');
   const rpj1El   = document.getElementById('inp-rpj1');
   const slRpj1   = document.getElementById('sl-rpj1');
 
-  if (extra > 0 && abgaben > 0) {
-    const brutto       = extra / (1 - abgaben / 100);
-    const jahresbrutto = Math.round(brutto * 12);
-    const vorschlag    = Math.round((jahresbrutto / DURCHSCHNITTSENTGELT) * 100) / 100;
-    const capped       = Math.min(vorschlag, 1);
-    if (rpj1El) rpj1El.value = capped;
-    if (slRpj1) slRpj1.value = capped;
-    if (hintRpj1) {
-      hintRpj1.style.display = 'block';
-      hintRpj1.innerHTML =
+  if (extra > 0) {
+    let vorschlag, hintHTML;
+    if (isMinijob) {
+      if (minijobAufstockung) {
+        // Voller Beitragssatz durch Aufstockung: RPJ = Jahreslohn / DE
+        vorschlag = Math.round((extra * 12 / durchschnittsentgelt) * 100) / 100;
+        const capped = Math.min(vorschlag, 1);
+        hintHTML =
+          `Minijob mit Aufstockung (voller RV-Beitrag):<br>` +
+          `<span style="color:var(--teal)">${fmt(extra)} × 12 ÷ ${fmt(durchschnittsentgelt)} ` +
+          `= <strong>${capped} Pkt/Jahr</strong></span>`;
+        vorschlag = capped;
+      } else {
+        // Nur AG-Pauschale 15 % statt 18,6 %: RPJ = (Lohn × 12 × 0.15/0.186) / DE
+        const faktor = MINIJOB_AG_ANTEIL / RV_BEITRAGSSATZ;
+        vorschlag = Math.round((extra * 12 * faktor / durchschnittsentgelt) * 100) / 100;
+        const capped = Math.min(vorschlag, 1);
+        const pctStr = `${(MINIJOB_AG_ANTEIL * 100).toFixed(0)}% ÷ ${(RV_BEITRAGSSATZ * 100).toFixed(1)}%`;
+        hintHTML =
+          `Minijob ohne Aufstockung (AG-Pauschale ${(MINIJOB_AG_ANTEIL * 100).toFixed(0)}%):<br>` +
+          `<span style="color:var(--teal)">${fmt(extra)} × 12 × (${pctStr}) ÷ ${fmt(durchschnittsentgelt)} ` +
+          `= <strong>${capped} Pkt/Jahr</strong></span>`;
+        vorschlag = capped;
+      }
+    } else if (abgaben > 0) {
+      const brutto   = extra / (1 - abgaben / 100);
+      vorschlag = Math.round((brutto * 12 / durchschnittsentgelt) * 100) / 100;
+      const capped = Math.min(vorschlag, 1);
+      hintHTML =
         `Brutto ~${fmt(Math.round(brutto))} €/Mo (${abgaben}% Abgaben)<br>` +
-        `<span style="color:var(--teal)">${fmt(Math.round(brutto))} × 12 ÷ ${fmt(DURCHSCHNITTSENTGELT)} ` +
+        `<span style="color:var(--teal)">${fmt(Math.round(brutto))} × 12 ÷ ${fmt(durchschnittsentgelt)} ` +
         `= <strong>${capped} Pkt/Jahr</strong></span>`;
+      vorschlag = capped;
+    } else {
+      vorschlag = 0;
+      hintHTML = '';
+    }
+    if (rpj1El) rpj1El.value = vorschlag;
+    if (slRpj1) slRpj1.value = vorschlag;
+    if (hintRpj1 && hintHTML) {
+      hintRpj1.style.display = 'block';
+      hintRpj1.innerHTML = hintHTML;
+    } else if (hintRpj1) {
+      hintRpj1.style.display = 'none';
     }
   } else {
     if (rpj1El) { rpj1El.value = 0; }

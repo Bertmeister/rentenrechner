@@ -7,7 +7,10 @@ export const GRV_AGE     = 67;
 export const RP_BASE     = 40.79;   // Rentenpunktwert 2025
 export const RP_GROW     = 0.015;
 export const GRV_NET_PCT = 0.895;
-export const DURCHSCHNITTSENTGELT = 45358; // vorläufiger Wert 2026
+export const DURCHSCHNITTSENTGELT = 51944; // vorläufiger Wert 2026
+export const MINIJOB_GRENZE    = 538;
+export const RV_BEITRAGSSATZ   = 0.186;
+export const MINIJOB_AG_ANTEIL = 0.15;
 
 /** ETF future value with monthly savings (annual compounding) */
 export function etfFV(etf0, sparMo, r, years) {
@@ -75,6 +78,9 @@ export function getParams() {
     if (betrag > 0 && alter > 0) einmal.push({ betrag, alter });
   });
   const ohne = document.getElementById('toggle-mode')?.checked ?? true;
+  const isMinijob          = document.getElementById('chk-minijob')?.checked ?? false;
+  const minijobAufstockung = document.getElementById('chk-minijob-aufstockung')?.checked ?? false;
+  const durchschnittsentgelt = parseFloat(document.getElementById('inp-durchschnittsentgelt')?.value) || DURCHSCHNITTSENTGELT;
   const retBrutto = g('inp-ret-brutto') || 7.0;
   const tax       = g('inp-tax') || 18.5;
   const ret       = retBrutto * (1 - tax / 100);
@@ -100,6 +106,9 @@ export function getParams() {
     tax,
     ohne,
     einmal,
+    durchschnittsentgelt,
+    isMinijob,
+    minijobAufstockung,
   };
 }
 

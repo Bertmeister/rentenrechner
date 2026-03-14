@@ -42,6 +42,9 @@ export function captureValues() {
     inf:    g('inp-inf')    || 2.0,
     ohne:   document.getElementById('toggle-mode')?.checked ?? true,
     einmal,
+    durchschnittsentgelt: parseFloat(document.getElementById('inp-durchschnittsentgelt')?.value) || 51944,
+    isMinijob:           document.getElementById('chk-minijob')?.checked ?? false,
+    minijobAufstockung:  document.getElementById('chk-minijob-aufstockung')?.checked ?? false,
   };
 }
 
@@ -73,6 +76,15 @@ export function applyValues(v, addEinmalFn, recalcFn, updateHintsFn) {
 
   const toggle = document.getElementById('toggle-mode');
   if (toggle) toggle.checked = v.ohne ?? true;
+
+  setField('inp-durchschnittsentgelt', v.durchschnittsentgelt || 51944);
+
+  const chkMj = document.getElementById('chk-minijob');
+  if (chkMj) chkMj.checked = v.isMinijob ?? false;
+  const lblAuf = document.getElementById('lbl-aufstockung');
+  if (lblAuf) lblAuf.style.display = (v.isMinijob) ? 'flex' : 'none';
+  const chkAuf = document.getElementById('chk-minijob-aufstockung');
+  if (chkAuf) chkAuf.checked = v.minijobAufstockung ?? false;
 
   // Restore Einmalzahlungen
   document.querySelectorAll('.einmal-block').forEach(b => b.remove());
