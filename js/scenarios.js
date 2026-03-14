@@ -45,6 +45,7 @@ export function captureValues() {
     durchschnittsentgelt: parseFloat(document.getElementById('inp-durchschnittsentgelt')?.value) || 51944,
     isMinijob:           document.getElementById('chk-minijob')?.checked ?? false,
     minijobAufstockung:  document.getElementById('chk-minijob-aufstockung')?.checked ?? false,
+    grvStartAge:         parseInt(document.getElementById('sel-grv-start')?.value) || 67,
   };
 }
 
@@ -85,6 +86,9 @@ export function applyValues(v, addEinmalFn, recalcFn, updateHintsFn) {
   if (lblAuf) lblAuf.style.display = (v.isMinijob) ? 'flex' : 'none';
   const chkAuf = document.getElementById('chk-minijob-aufstockung');
   if (chkAuf) chkAuf.checked = v.minijobAufstockung ?? false;
+
+  const selGrv = document.getElementById('sel-grv-start');
+  if (selGrv && v.grvStartAge) selGrv.value = v.grvStartAge;
 
   // Restore Einmalzahlungen
   document.querySelectorAll('.einmal-block').forEach(b => b.remove());

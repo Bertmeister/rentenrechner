@@ -169,6 +169,10 @@ function wireInputs() {
     recalc();
   });
 
+  document.getElementById('sel-grv-start')?.addEventListener('change', () => {
+    recalc();
+  });
+
   document.getElementById('chk-minijob')?.addEventListener('change', () => {
     const checked = document.getElementById('chk-minijob').checked;
     const lblAuf = document.getElementById('lbl-aufstockung');
