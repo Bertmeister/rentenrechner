@@ -182,7 +182,14 @@ export function calcScenario(params, retireAge) {
   const cap1_atRetire_nom  = cap1_atRetire_real * inflToRetire;
 
   // ETF residual at grvStartAge (nominal)
-  const etfRes67Nom  = etfResidualAt67(etfRetireNom, lueckeNomAnnual_yr1, ret, inf, yearsToGrv);
+  // Einmalzahlungen während Phase 1 (retireAge < alter <= grvStartAge) werden
+  // vorwärtsverzinst zum grvStartAge addiert – sie waren bisher komplett unsichtbar.
+  let etfRes67Nom = etfResidualAt67(etfRetireNom, lueckeNomAnnual_yr1, ret, inf, yearsToGrv);
+  einmal.forEach(({ betrag, alter }) => {
+    if (alter > retireAge && alter <= grvStartAge) {
+      etfRes67Nom += betrag * Math.pow(1 + ret, grvStartAge - alter);
+    }
+  });
   const etfRes67Real = etfRes67Nom / inflTo67;
 
   // Percentages for display
