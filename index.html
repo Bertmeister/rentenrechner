@@ -96,7 +96,7 @@
       </div>
 
       <!-- ABGABENQUOTE -->
-      <div class="inputs-section" style="min-width:14rem;max-width:16rem;background:rgba(200,169,110,0.03)">
+      <div class="inputs-section" style="background:rgba(200,169,110,0.03)">
         <div class="inputs-section-label inputs-section-header" style="color:var(--accent)">
           Typische Abgabenquoten <span class="acc-icon">▼</span>
         </div>
@@ -213,6 +213,17 @@
           <div class="input-hint" id="hint-grv-abzug" style="display:none"></div>
         </div>
         <div class="input-group">
+          <span class="input-label" title="Langjährig: ≥ 35 Beitragsjahre (Abzug gilt). Besonders langjährig: ≥ 45 Beitragsjahre (kein Abzug)." style="cursor:help;border-bottom:1px dotted rgba(122,125,138,0.4)">Versichertenstatus ⓘ</span>
+          <div class="input-row">
+            <select id="sel-versicherten-status">
+              <option value="standard">Standard (Abzug gilt)</option>
+              <option value="langjährig">Langjährig Versicherte (≥ 35 J., Abzug gilt)</option>
+              <option value="besonders">Besonders langjährig (≥ 45 J., kein Abzug)</option>
+            </select>
+          </div>
+          <div class="input-hint" id="hint-versicherten-status" style="display:none"></div>
+        </div>
+        <div class="input-group">
           <span class="input-label">Bedarf Phase 2</span>
           <div class="input-row">
             <input type="number" id="inp-need2" value="2000" min="500" max="10000" step="100">
@@ -247,25 +258,13 @@
         </div>
       </div>
 
-      <!-- EINMALZAHLUNGEN & MODUS -->
-      <div class="inputs-section" style="flex:1 1 auto;min-width:12rem">
+      <!-- EINMALZAHLUNGEN -->
+      <div class="inputs-section">
         <div class="inputs-section-label inputs-section-header" style="color:var(--accent)">
           Einmalzahlungen <span class="acc-icon">▼</span>
         </div>
         <div class="einmal-row" id="einmal-container"></div>
         <button class="einmal-add-btn" id="einmal-add-btn" onclick="addEinmal()">+ hinzufügen</button>
-        <div style="margin-top:0.5rem;padding-top:0.75rem;border-top:1px solid var(--border)">
-          <div class="inputs-section-label c-blue" style="margin-bottom:0.5rem">Berechnungsmodus</div>
-          <div class="toggle-row">
-            <span class="toggle-option" id="lbl-verzehr" style="font-size:0.75rem">Mit Verzehr</span>
-            <label class="switch">
-              <input type="checkbox" id="toggle-mode" checked>
-              <span class="switch-track"></span>
-            </label>
-            <span class="toggle-option active" id="lbl-erhalt" style="font-size:0.75rem">Ohne Verzehr</span>
-          </div>
-          <div class="mode-badge" id="mode-badge">Kapital bleibt erhalten</div>
-        </div>
       </div>
 
       <!-- MARKTPARAMETER -->
@@ -300,6 +299,22 @@
           <input type="range" id="sl-inf" min="0" max="10" step="0.1" value="2.0">
         </div>
         <div class="input-hint" id="hint-realrendite" style="margin-top:0.25rem;padding-top:0.5rem;border-top:1px solid var(--border)"></div>
+      </div>
+
+      <!-- BERECHNUNGSMODUS -->
+      <div class="inputs-section">
+        <div class="inputs-section-label inputs-section-header c-blue">
+          Berechnungsmodus <span class="acc-icon">▼</span>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-option" id="lbl-verzehr" style="font-size:0.75rem">Mit Verzehr</span>
+          <label class="switch">
+            <input type="checkbox" id="toggle-mode" checked>
+            <span class="switch-track"></span>
+          </label>
+          <span class="toggle-option active" id="lbl-erhalt" style="font-size:0.75rem">Ohne Verzehr</span>
+        </div>
+        <div class="mode-badge" id="mode-badge">Kapital bleibt erhalten</div>
       </div>
 
     </div><!-- /inputs-panel -->

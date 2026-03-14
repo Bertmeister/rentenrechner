@@ -111,13 +111,15 @@ export function getParams() {
     isMinijob,
     minijobAufstockung,
     grvStartAge: parseInt(document.getElementById('sel-grv-start')?.value) || GRV_AGE,
+    versichertenStatus: document.getElementById('sel-versicherten-status')?.value || 'standard',
   };
 }
 
 /** Compute all values for a single retirement scenario */
 export function calcScenario(params, retireAge) {
   const { age, life, need, etf0, inf, ret, ent, rp0, rpj0, rpj1,
-          spar, extra, need2, zusatz, ohne, einmal, grvStartAge = GRV_AGE } = params;
+          spar, extra, need2, zusatz, ohne, einmal,
+          grvStartAge = GRV_AGE, versichertenStatus = 'standard' } = params;
 
   const retReal = (1 + ret) / (1 + inf) - 1;
   const yearsToRetire  = Math.max(0, retireAge - age);
@@ -133,9 +135,11 @@ export function calcScenario(params, retireAge) {
   const rpAtRetire = rp0 + yearsToRetire * rpj0;
   const rpAt67     = rpAtRetire + yearsToGrv * rpj1;            // points at GRV start
 
-  // Zugangsfaktor (0,3% Abzug je Monat vor 67)
+  // Zugangsfaktor (0,3% Abzug je Monat vor 67; entfällt bei besonders langjährig Versicherten)
   const monthsEarly   = Math.max(0, (GRV_AGE - grvStartAge) * 12);
-  const zugangsfaktor = 1 - ABZUG_PRO_MONAT * monthsEarly;
+  const zugangsfaktor = versichertenStatus === 'besonders'
+    ? 1
+    : 1 - ABZUG_PRO_MONAT * monthsEarly;
 
   // GRV at grvStartAge
   const grvBruttoNom = rpAt67 * rpWert67 * zugangsfaktor;
@@ -191,7 +195,7 @@ export function calcScenario(params, retireAge) {
   const p2gapReal = etfRes67Real - cap2_at67_real;
 
   return {
-    retireAge, age, grvStartAge,
+    retireAge, age, grvStartAge, versichertenStatus,
     yearsToRetire, yearsTo67: yearsToGrv, yearsP2,
     inflToRetire, inflTo67, retReal,
     rpWert67, rpAtRetire, rpAt67,
