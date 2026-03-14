@@ -5,7 +5,8 @@
 import { getParams, calcAll, DURCHSCHNITTSENTGELT } from './calc.js';
 import {
   renderTable, renderCards, renderVerif,
-  updateBreakeven, updateHints, updateSubtitle, fmt
+  updateBreakeven, updateHints, updateHintRpj0, updateHintRpj1,
+  updateSubtitle, fmt
 } from './render.js';
 import {
   getScenarios, saveScenarios, captureValues, applyValues,
@@ -128,13 +129,28 @@ const inputPairs = [
   ['inp-netto','sl-netto'],['inp-abgaben','sl-abgaben'],
 ];
 
+// RPJ0 aktualisiert sich NUR bei Nettogehalt- oder Abgabenquote-Änderung
+const rpj0Triggers = new Set(['inp-netto', 'sl-netto', 'inp-abgaben', 'sl-abgaben']);
+// RPJ1 aktualisiert sich NUR bei Nebeneinkommen- oder Abgabenquote-Änderung
+const rpj1Triggers = new Set(['inp-extra', 'sl-extra', 'inp-abgaben', 'sl-abgaben']);
+
 function wireInputs() {
   inputPairs.forEach(([a, b]) => {
     const inp = document.getElementById(a);
     const sl  = document.getElementById(b);
     if (!inp || !sl) return;
-    inp.addEventListener('input', () => { sl.value = inp.value; recalc(); });
-    sl.addEventListener('input',  () => { inp.value = sl.value; recalc(); });
+    inp.addEventListener('input', () => {
+      sl.value = inp.value;
+      if (rpj0Triggers.has(a)) { updateHintRpj0(getParams()); }
+      if (rpj1Triggers.has(a)) { updateHintRpj1(getParams()); }
+      recalc();
+    });
+    sl.addEventListener('input', () => {
+      inp.value = sl.value;
+      if (rpj0Triggers.has(b)) { updateHintRpj0(getParams()); }
+      if (rpj1Triggers.has(b)) { updateHintRpj1(getParams()); }
+      recalc();
+    });
   });
 
   document.getElementById('toggle-mode')?.addEventListener('change', () => {
@@ -261,6 +277,9 @@ function loadScenario(idx) {
   applyValues(s.values, window.addEinmal, recalc, () => {
     const params = getParams();
     updateHints(params);
+    // RPJ-Hints zeigen, aber Werte NICHT überschreiben (updateHintRpj0/1 würde
+    // die gespeicherten Werte durch Netto-Berechnung ersetzen – unerwünscht).
+    // Hints werden beim nächsten Ändern von Netto/Extra automatisch aktualisiert.
   });
   window.closeScenarioModal();
 }
@@ -422,6 +441,11 @@ function init() {
   if (window.innerWidth < 768) {
     switchTab('tab-results');
   }
+
+  // Initialize RPJ hints once from default input values
+  const initParams = getParams();
+  updateHintRpj0(initParams);
+  updateHintRpj1(initParams);
 
   // First run
   recalc();
