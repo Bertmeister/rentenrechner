@@ -162,7 +162,7 @@ export function updateHintRpj1(params) {
 
 /** Update all other hints (verbleib, ETF-Entnahme, Realrendite). NOT RPJ. */
 export function updateHints(params) {
-  const { netto, spar, extra, need, retBrutto, tax, inf, grvStartAge } = params;
+  const { netto, spar, extra, need, retBrutto, tax, inf, grvStartAge, versichertenStatus } = params;
 
   // GRV Frührente Abzug hint
   const hintGrvAbzug = document.getElementById('hint-grv-abzug');
@@ -170,11 +170,31 @@ export function updateHints(params) {
     if (grvStartAge < GRV_AGE) {
       const months = (GRV_AGE - grvStartAge) * 12;
       const abzug  = months * 0.003 * 100;
-      hintGrvAbzug.style.display = 'block';
-      hintGrvAbzug.innerHTML =
-        `<span style="color:var(--yellow)">⚠ Dauerhafte Kürzung: ${months} Monate × 0,3% = <strong>−${abzug.toFixed(1)}%</strong> der Rente</span>`;
+      if (versichertenStatus === 'besonders') {
+        hintGrvAbzug.style.display = 'block';
+        hintGrvAbzug.innerHTML =
+          `<span style="color:var(--teal)">✓ Kein Abzug – besonders langjährig Versicherte (≥ 45 Beitragsjahre)</span>`;
+      } else {
+        hintGrvAbzug.style.display = 'block';
+        hintGrvAbzug.innerHTML =
+          `<span style="color:var(--yellow)">⚠ Dauerhafte Kürzung: ${months} Monate × 0,3% = <strong>−${abzug.toFixed(1)}%</strong> der Rente</span>`;
+      }
     } else {
       hintGrvAbzug.style.display = 'none';
+    }
+  }
+
+  // Versichertenstatus hint
+  const hintVS = document.getElementById('hint-versicherten-status');
+  if (hintVS) {
+    if (versichertenStatus === 'besonders') {
+      hintVS.style.display = 'block';
+      hintVS.innerHTML = `<span style="color:var(--teal)">Zugangsfaktor 1,0 – Abzüge entfallen vollständig</span>`;
+    } else if (versichertenStatus === 'langjährig') {
+      hintVS.style.display = 'block';
+      hintVS.innerHTML = `<span style="color:var(--text-dim)">Frühestmöglich ab 63 – Abzüge gelten wie beim Standard</span>`;
+    } else {
+      hintVS.style.display = 'none';
     }
   }
 
@@ -419,6 +439,19 @@ export function renderVerif(data) {
     },
     // ── Phase 2 (lila) ────────────────────────────────────────────────────────
     {
+      title: `Phase 2 · GRV netto bei ${grvStartAge}`,
+      color: 'var(--purple)',
+      steps: [
+        [`${fmtV(rpAt67,1)} Pkt × ${fmtV(rpWert67,2)} €/Pkt (Rentenwert bei ${grvStartAge})`, `= ${fmtV(grvBruttoNom / zugangsfaktor)} € (vor Abzug)`],
+        ...(monthsEarly > 0 ? [[`× Zugangsfaktor ${fmtV(zugangsfaktor,4)} (−${fmtV((1-zugangsfaktor)*100,1)}%)`, `= ${fmtV(grvBruttoNom)} € brutto`]] : [[`= Brutto`, `${fmtV(grvBruttoNom)} €`]]),
+        [`× 89,5% (nach KV + PV-Beitrag)`, `= ${fmtV(grvBruttoNom*GRV_NET_PCT)} €`],
+        ...(zusatz > 0 ? [[`+ Zusatzrente (nominal)`, `+ ${fmtV(zusatz)} €`]] : []),
+        [`= Rente gesamt netto/Mo (nominal)`, `${fmtV(grvNettoNom)} €`, true],
+        [`Real (heute €, inflationsbereinigt)`, `${fmtV(grvNettoReal)} €/Mo`],
+      ],
+      hint: `Deckt ${fmtV(need2>0?Math.min(100,(grvNettoReal/need2)*100):0,0)}% des Bedarfs in Phase 2`
+    },
+    {
       title: `Phase 2 · Benötigtes Kapital bei ${grvStartAge}`,
       color: 'var(--purple)',
       steps: [
@@ -431,19 +464,6 @@ export function renderVerif(data) {
         [`= Benötigtes Kapital (real, heute €)`, `${fmtV(cap2_at67_real)} €`, true],
         [`= Benötigtes Kapital (nominal bei ${grvStartAge})`, `${fmtV(cap2_at67_nom)} €`],
       ]
-    },
-    {
-      title: `Phase 2 · GRV netto bei ${grvStartAge}`,
-      color: 'var(--purple)',
-      steps: [
-        [`${fmtV(rpAt67,1)} Pkt × ${fmtV(rpWert67,2)} €/Pkt (Rentenwert bei ${grvStartAge})`, `= ${fmtV(grvBruttoNom / zugangsfaktor)} € (vor Abzug)`],
-        ...(monthsEarly > 0 ? [[`× Zugangsfaktor ${fmtV(zugangsfaktor,4)} (−${fmtV((1-zugangsfaktor)*100,1)}%)`, `= ${fmtV(grvBruttoNom)} € brutto`]] : [[`= Brutto`, `${fmtV(grvBruttoNom)} €`]]),
-        [`× 89,5% (nach KV + PV-Beitrag)`, `= ${fmtV(grvBruttoNom*GRV_NET_PCT)} €`],
-        ...(zusatz > 0 ? [[`+ Zusatzrente (nominal)`, `+ ${fmtV(zusatz)} €`]] : []),
-        [`= Rente gesamt netto/Mo (nominal)`, `${fmtV(grvNettoNom)} €`, true],
-        [`Real (heute €, inflationsbereinigt)`, `${fmtV(grvNettoReal)} €/Mo`],
-      ],
-      hint: `Deckt ${fmtV(need2>0?Math.min(100,(grvNettoReal/need2)*100):0,0)}% des Bedarfs in Phase 2`
     },
     {
       title: `ETF-Restwert bei ${grvStartAge} · Kern-Check`,

@@ -136,13 +136,15 @@ h1 {
   overflow-x: auto;
 }
 .inputs-section {
-  flex: 0 0 auto;
+  flex: 0 0 15rem;
+  width: 15rem;
   display: flex;
   flex-direction: column;
   gap: 0.875rem;
   padding: 1rem 1.25rem 1.25rem;
   border-right: 1px solid var(--border);
-  min-width: 10rem;
+  min-width: 0;
+  box-sizing: border-box;
 }
 .inputs-section:last-child { border-right: none; }
 .inputs-section-label {
@@ -227,12 +229,12 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* ── EINMALZAHLUNGEN ──────────────────────────────────────────────────────── */
-.einmal-row { display: flex; flex-wrap: wrap; gap: 0.625rem; align-items: flex-start; }
+.einmal-row { display: flex; flex-direction: column; gap: 0.625rem; align-items: stretch; }
 .einmal-block {
   display: flex; flex-direction: column; gap: 0.4rem;
   background: rgba(200,169,110,0.04); border: 1px solid rgba(200,169,110,0.15);
   border-radius: 3px; padding: 0.6rem 0.75rem;
-  position: relative; min-width: 8rem; flex: 0 0 auto;
+  position: relative; width: 100%; box-sizing: border-box;
 }
 .einmal-block .einmal-title {
   font-size: 0.6875rem; color: var(--accent); margin-bottom: 0.25rem;
