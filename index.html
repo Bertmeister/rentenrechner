@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1117" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f4f2ee" media="(prefers-color-scheme: light)">
+  <meta name="description" content="Persönlicher Rentenplaner – Szenarien, ETF-Bedarf und GRV-Rente auf einen Blick">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Rentenplanung">
+  <title>Rentenplanung</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     TAB: EINGABEN (desktop: always visible; mobile: tab-settings)
+     ══════════════════════════════════════════════════════════════════════════ -->
+
+<div class="card">
+
+  <!-- STICKY HEADER (always visible on all tabs) -->
+  <div class="sticky-top">
+    <div class="header">
+      <div class="header-left">
+        <div class="label">Finanzplanung · Persönlich</div>
+        <h1>Rentenszenarien im Überblick</h1>
+        <div class="subtitle" id="subtitle"></div>
+      </div>
+      <div class="header-actions">
+        <button class="help-btn" onclick="openScenarioModal()" title="Szenarien speichern &amp; laden">💾</button>
+        <button class="help-btn" onclick="openModal()" title="Hilfe &amp; Erklärung">?</button>
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">☀ Helles Design</button>
+      </div>
+    </div>
+    <div class="breakeven-wrap">
+      <div>
+        <div class="breakeven-label">Frühestmögliche Übergangsphase</div>
+        <div class="breakeven-value" id="breakeven-value">–</div>
+      </div>
+      <div class="breakeven-sub" id="breakeven-sub"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════ SETTINGS TAB ════════════════ -->
+  <div class="tab-panel active" id="tab-settings">
+    <div class="inputs-toggle-bar" id="inputs-toggle-bar" onclick="toggleInputs()">
+      <span class="inputs-toggle-label">Einstellungen</span>
+      <span class="inputs-toggle-icon" id="inputs-toggle-icon">▲</span>
+    </div>
+
+    <div class="inputs-panel" id="inputs-panel">
+
+      <!-- AUSGANGSBASIS -->
+      <div class="inputs-section">
+        <div class="inputs-section-label inputs-section-header" style="color:var(--text-dim)">
+          Ausgangsbasis <span class="acc-icon">▼</span>
+        </div>
+        <div class="input-group">
+          <span class="input-label">Aktuelles Alter</span>
+          <div class="input-row">
+            <input type="number" id="inp-age" value="20" min="20" max="64" step="1">
+            <span class="input-unit">J.</span>
+          </div>
+          <input type="range" id="sl-age" min="20" max="64" step="1" value="20">
+        </div>
+        <div class="input-group">
+          <span class="input-label" title="Deine bisher gesammelten Rentenpunkte – findest du auf deiner jährlichen Renteninformation." style="cursor:help;border-bottom:1px dotted rgba(122,125,138,0.4)">Erworbene Rentenpunkte ⓘ</span>
+          <div class="input-row">
+            <input type="number" id="inp-rp" value="0" min="0" max="60" step="0.5">
+            <span class="input-unit">Pkt</span>
+          </div>
+          <input type="range" id="sl-rp" min="0" max="60" step="0.5" value="0">
+        </div>
+        <div class="input-group">
+          <span class="input-label">Nettogehalt/Monat</span>
+          <div class="input-row">
+            <input type="number" id="inp-netto" value="2000" min="0" max="15000" step="100">
+            <span class="input-unit">€</span>
+          </div>
+          <input type="range" id="sl-netto" min="0" max="10000" step="100" value="2000">
+        </div>
+      </div>
+
+      <!-- ABGABENQUOTE -->
+      <div class="inputs-section" style="min-width:14rem;max-width:16rem;background:rgba(200,169,110,0.03)">
+        <div class="inputs-section-label inputs-section-header" style="color:var(--accent)">
+          Typische Abgabenquoten <span class="acc-icon">▼</span>
+        </div>
+        <div class="input-group">
+          <span class="input-label" title="Näherung: Gesamtabgaben (Steuern + SV) als % vom Brutto. Vom Gehaltszettel: (Brutto - Netto) / Brutto." style="cursor:help;border-bottom:1px dotted rgba(122,125,138,0.4)">Abgabenquote (Näherung) ⓘ</span>
+          <div class="input-row">
+            <input type="number" id="inp-abgaben" value="36" min="15" max="55" step="1">
+            <span class="input-unit">%</span>
+          </div>
+          <input type="range" id="sl-abgaben" min="15" max="55" step="1" value="36">
+          <div class="input-hint" id="hint-brutto" style="display:none"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.3rem;margin-top:-0.1rem">
+          <span class="abgaben-ref-label">Kl. I, ledig (37–40 %)</span>
+          <span class="abgaben-ref-label">Kl. III, verheiratet (25–30 %)</span>
+          <span class="abgaben-ref-label">Kl. IV, verheiratet (35–38 %)</span>
+          <span class="abgaben-ref-label">Selbstständig GKV (28–35 %)</span>
+          <span class="abgaben-ref-label" style="margin-top:0.25rem;opacity:0.6;font-size:0.625rem">Gehaltszettel: (B−N)÷B</span>
+        </div>
+      </div>
+
+      <!-- PHASE 0 -->
+      <div class="inputs-section">
+        <div class="inputs-section-label inputs-section-header c-accent">
+          Phase 0 · Ansparphase <span class="acc-icon">▼</span>
+        </div>
+        <div class="input-group">
+          <span class="input-label">ETFs heute</span>
+          <div class="input-row">
+            <input type="number" id="inp-etf" value="0" min="0" max="1000000" step="1000">
+            <span class="input-unit">€</span>
+          </div>
+          <input type="range" id="sl-etf" min="0" max="500000" step="1000" value="0">
+        </div>
+        <div class="input-group">
+          <span class="input-label">Sparrate/Monat</span>
+          <div class="input-row">
+            <input type="number" id="inp-spar" value="0" min="0" max="3000" step="50">
+            <span class="input-unit">€</span>
+          </div>
+          <input type="range" id="sl-spar" min="0" max="3000" step="50" value="0">
+          <div class="input-hint" id="hint-verbleib" style="display:none"></div>
+        </div>
+        <div class="input-group">
+          <span class="input-label" title="~1 Punkt pro Jahr bei Durchschnittsverdienst (~45.000 € brutto)." style="cursor:help;border-bottom:1px dotted rgba(122,125,138,0.4)">Rentenpunkte/Jahr ⓘ</span>
+          <div class="input-row">
+            <input type="number" id="inp-rpj0" value="0" min="0" max="2" step="0.05">
+            <span class="input-unit">Pkt</span>
+          </div>
+          <input type="range" id="sl-rpj0" min="0" max="2" step="0.05" value="0">
+          <div class="input-hint" id="hint-rpj0" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- PHASE 1 -->
+      <div class="inputs-section">
+        <div class="inputs-section-label inputs-section-header c-teal">
+          Phase 1 · Übergangsphase <span class="acc-icon">▼</span>
+        </div>
+        <div class="input-group">
+          <span class="input-label">Bedarf Phase 1</span>
+          <div class="input-row">
+            <input type="number" id="inp-need" value="0" min="0" max="10000" step="100">
+            <span class="input-unit">€/Mo</span>
+          </div>
+          <input type="range" id="sl-need" min="0" max="10000" step="100" value="0">
+        </div>
+        <div class="input-group">
+          <span class="input-label" title="z.B. Minijob, Freelance oder Teilzeit – als Nettobetrag." style="cursor:help;border-bottom:1px dotted rgba(122,125,138,0.4)">Nebeneinkommen netto ⓘ</span>
+          <div class="input-row">
+            <input type="number" id="inp-extra" value="0" min="0" max="3000" step="50">
+            <span class="input-unit">€/Mo</span>
+          </div>
+          <input type="range" id="sl-extra" min="0" max="3000" step="50" value="0">
+          <div class="input-hint" id="hint-etf-entnahme" style="display:none"></div>
+        </div>
+        <div class="input-group">
+          <span class="input-label" title="~1 Punkt pro Jahr bei Durchschnittsverdienst." style="cursor:help;border-bottom:1px dotted rgba(122,125,138,0.4)">Rentenpunkte/Jahr ⓘ</span>
+          <div class="input-row">
+            <input type="number" id="inp-rpj1" value="0" min="0" max="1" step="0.05">
+            <span class="input-unit">Pkt</span>
+          </div>
+          <input type="range" id="sl-rpj1" min="0" max="1" step="0.05" value="0">
+          <div class="input-hint" id="hint-rpj1" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- PHASE 2 -->
+      <div class="inputs-section">
+        <div class="inputs-section-label inputs-section-header c-purple">
+          Phase 2 · Vollrente (ab 67) <span class="acc-icon">▼</span>
+        </div>
+        <div class="input-group">
+          <span class="input-label">Bedarf Phase 2</span>
+          <div class="input-row">
+            <input type="number" id="inp-need2" value="2000" min="500" max="10000" step="100">
+            <span class="input-unit">€/Mo</span>
+          </div>
+          <input type="range" id="sl-need2" min="500" max="10000" step="100" value="2000">
+        </div>
+        <div class="input-group">
+          <span class="input-label">Zusatzrente ab 67</span>
+          <div class="input-row">
+            <input type="number" id="inp-zusatz" value="0" min="0" max="5000" step="50">
+            <span class="input-unit">€/Mo</span>
+          </div>
+          <input type="range" id="sl-zusatz" min="0" max="5000" step="50" value="0">
+          <div class="input-hint">Nominalwert bei 67 · bAV, Riester etc.</div>
+        </div>
+        <div class="input-group" id="grp-life">
+          <span class="input-label">Lebenserwartung</span>
+          <div class="input-row">
+            <input type="number" id="inp-life" value="90" min="70" max="110" step="1">
+            <span class="input-unit">J.</span>
+          </div>
+          <input type="range" id="sl-life" min="70" max="110" step="1" value="90">
+        </div>
+        <div class="input-group" id="grp-ent">
+          <span class="input-label" title="Wieviel % des Kapitals du jährlich entnimmst. 3,5–4% gilt als nachhaltig (Trinity-Studie)." style="cursor:help;border-bottom:1px dotted rgba(122,125,138,0.4)">Entnahme % p.a. ⓘ</span>
+          <div class="input-row">
+            <input type="number" id="inp-ent" value="3.5" min="0.5" max="15" step="0.1">
+            <span class="input-unit">%</span>
+          </div>
+          <input type="range" id="sl-ent" min="0.5" max="15" step="0.1" value="3.5">
+        </div>
+      </div>
+
+      <!-- EINMALZAHLUNGEN & MODUS -->
+      <div class="inputs-section" style="flex:1 1 auto;min-width:12rem">
+        <div class="inputs-section-label inputs-section-header" style="color:var(--accent)">
+          Einmalzahlungen <span class="acc-icon">▼</span>
+        </div>
+        <div class="einmal-row" id="einmal-container"></div>
+        <button class="einmal-add-btn" id="einmal-add-btn" onclick="addEinmal()">+ hinzufügen</button>
+        <div style="margin-top:0.5rem;padding-top:0.75rem;border-top:1px solid var(--border)">
+          <div class="inputs-section-label c-blue" style="margin-bottom:0.5rem">Berechnungsmodus</div>
+          <div class="toggle-row">
+            <span class="toggle-option" id="lbl-verzehr" style="font-size:0.75rem">Mit Verzehr</span>
+            <label class="switch">
+              <input type="checkbox" id="toggle-mode" checked>
+              <span class="switch-track"></span>
+            </label>
+            <span class="toggle-option active" id="lbl-erhalt" style="font-size:0.75rem">Ohne Verzehr</span>
+          </div>
+          <div class="mode-badge" id="mode-badge">Kapital bleibt erhalten</div>
+        </div>
+      </div>
+
+      <!-- MARKTPARAMETER -->
+      <div class="inputs-section">
+        <div class="inputs-section-label inputs-section-header c-blue">
+          Marktparameter <span class="acc-icon">▼</span>
+        </div>
+        <div class="input-group">
+          <span class="input-label">Bruttorendite p.a.</span>
+          <div class="input-row">
+            <input type="number" id="inp-ret-brutto" value="7.0" min="1" max="20" step="0.1">
+            <span class="input-unit">%</span>
+          </div>
+          <input type="range" id="sl-ret-brutto" min="1" max="20" step="0.1" value="7.0">
+          <div class="input-hint">z.B. MSCI World ~7% historisch</div>
+        </div>
+        <div class="input-group">
+          <span class="input-label" title="Abgeltungsteuer 25% + Soli. Für Aktien-ETFs gilt 30% Teilfreistellung → effektiv ~18,5%." style="cursor:help;border-bottom:1px dotted rgba(122,125,138,0.4)">Steuer auf Kapitalerträge ⓘ</span>
+          <div class="input-row">
+            <input type="number" id="inp-tax" value="18.5" min="0" max="35" step="0.5">
+            <span class="input-unit">%</span>
+          </div>
+          <input type="range" id="sl-tax" min="0" max="35" step="0.5" value="18.5">
+          <div class="input-hint">Aktien-ETF nach Teilfreistellung ~18,5%</div>
+        </div>
+        <div class="input-group">
+          <span class="input-label">Inflation p.a.</span>
+          <div class="input-row">
+            <input type="number" id="inp-inf" value="2.0" min="0" max="10" step="0.1">
+            <span class="input-unit">%</span>
+          </div>
+          <input type="range" id="sl-inf" min="0" max="10" step="0.1" value="2.0">
+        </div>
+        <div class="input-hint" id="hint-realrendite" style="margin-top:0.25rem;padding-top:0.5rem;border-top:1px solid var(--border)"></div>
+      </div>
+
+    </div><!-- /inputs-panel -->
+  </div><!-- /tab-settings -->
+
+  <!-- ════════════════ RESULTS TAB ════════════════ -->
+  <div class="tab-panel" id="tab-results">
+
+    <!-- Mobile cards -->
+    <div id="mobile-cards"></div>
+
+    <!-- Desktop table -->
+    <div id="scroll-top-bar" style="overflow-x:auto;width:100%;height:14px;border-bottom:1px solid var(--border)">
+      <div id="scroll-top-inner" style="height:1px"></div>
+    </div>
+    <div class="table-wrap" id="table-wrap-main">
+      <table id="main-table">
+        <thead>
+          <tr class="grp" id="grp-row">
+            <th class="sp" rowspan="1"></th>
+            <th colspan="2" style="padding:0"><div class="gh g-info"><span class="phase-pill pill-p1">Phase 0</span> GRV-Punkte &amp; Kapital bei Übergangsphase</div></th>
+            <th class="phase-sep-th"></th>
+            <th colspan="2" style="padding:0"><div class="gh g-kauf"><span class="phase-pill pill-p2">Phase 1</span> Monatsbedarf</div></th>
+            <th colspan="2" style="padding:0"><div class="gh g-extra">Zusatzeinkommen</div></th>
+            <th colspan="2" style="padding:0"><div class="gh g-lueck">Monatliche Lücke</div></th>
+            <th colspan="2" style="padding:0"><div class="gh g-etf1">ETF-Volumen bei Übergangsphase</div></th>
+            <th class="phase-sep-th"></th>
+            <th colspan="2" style="padding:0"><div class="gh g-kauf"><span class="phase-pill pill-p3">Phase 2</span> Monatsbedarf ab 67</div></th>
+            <th colspan="2" style="padding:0"><div class="gh g-grv">Rente gesamt (GRV netto + Zusatz)</div></th>
+            <th colspan="2" style="padding:0"><div class="gh g-rluck">Monatliche Lücke ab 67</div></th>
+            <th colspan="2" style="padding:0"><div class="gh g-kap2">Benötigtes Kapital bei 67</div></th>
+            <th colspan="2" style="padding:0"><div class="gh g-etf2">ETF-Restwert bei 67</div></th>
+            <th colspan="2" style="padding:0"><div class="gh g-gap2">Kapital Lücke / Überschuss · bei 67</div></th>
+          </tr>
+          <tr class="cols">
+            <th>Übergang mit</th>
+            <th class="c-kap">GRV-Pkt<br><span style="font-size:0.5625rem">bei Übergang</span></th>
+            <th class="c-kap">GRV-Pkt<br><span style="font-size:0.5625rem">bei 67</span></th>
+            <th class="phase-sep-th"></th>
+            <th class="c-kauf">Nominal</th><th class="c-kauf">Real</th>
+            <th class="c-extra">Nominal</th><th class="c-extra">Real</th>
+            <th class="c-lueck">Nominal</th><th class="c-lueck">Real</th>
+            <th class="c-etf">Nominal</th><th class="c-etf">Real</th>
+            <th class="phase-sep-th"></th>
+            <th class="c-kauf">Nominal</th><th class="c-kauf">Real</th>
+            <th class="c-grv">Nominal</th><th class="c-grv">Real</th>
+            <th class="c-rluck">Nominal</th><th class="c-rluck">Real</th>
+            <th class="c-kap">Nominal</th><th class="c-kap">Real</th>
+            <th class="c-etf">Nominal</th><th class="c-etf">Real</th>
+            <th class="right">Nominal</th><th class="right">Real</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="formula-note" id="formula-note">
+      <span class="rb">Nominal</span>: zukünftige Euro &nbsp;|&nbsp;
+      <span class="rb">Real</span>: heutige Kaufkraft &nbsp;|&nbsp;
+      <span class="ra">Phase 0</span>: ETF mit Zinseszins &nbsp;|&nbsp;
+      <span class="rt">Übergangsphase</span>: Lücke = Bedarf − Nebeneinkommen &nbsp;|&nbsp;
+      <span class="rp">Phase 2</span>: Lücke = Bedarf − Rente gesamt
+    </div>
+
+  </div><!-- /tab-results -->
+
+  <!-- ════════════════ DETAILS TAB ════════════════ -->
+  <div class="tab-panel" id="tab-details">
+    <div class="verif-intro" id="verif-intro">↑ Tippe auf eine Karte oder Tabellenzeile um die Rechenschritte zu sehen</div>
+    <div class="verif-panel" id="verif-panel">
+      <div class="verif-header">
+        <div>
+          <span class="verif-title">Verifikation · Übergangsphase ab Alter</span>
+          <span class="verif-age" id="verif-age">–</span>
+        </div>
+        <button class="verif-close" onclick="closeVerif()">✕</button>
+      </div>
+      <div class="verif-grid" id="verif-grid"></div>
+    </div>
+  </div><!-- /tab-details -->
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-note">
+      * GRV-Netto ≈ 89,5% (KV+PV) · Rentenpunktwert 40,79 € (2025) × (1,015)^Jahre · Kein GRV-Abschlag · Sparrate mit Zinseszins
+    </div>
+    <div class="today-badge">Stand: Februar 2026</div>
+  </div>
+
+</div><!-- /card -->
+
+<!-- SCENARIO MODAL -->
+<div class="modal-overlay hidden" id="scenario-overlay">
+  <div class="modal" style="max-width:32rem">
+    <div class="modal-header">
+      <div>
+        <div class="modal-step-label">Lokaler Browser-Speicher</div>
+        <div class="modal-title">Szenarien</div>
+      </div>
+      <button class="modal-close" onclick="closeScenarioModal()">✕</button>
+    </div>
+    <div class="scenario-confirm-overlay" id="scenario-confirm-overlay">
+      <div class="scenario-confirm-text" id="scenario-confirm-text"></div>
+      <div class="scenario-confirm-btns">
+        <button class="scenario-confirm-no" onclick="hideConfirm()">Abbrechen</button>
+        <button class="scenario-confirm-yes" onclick="confirmOverwrite()">Überschreiben</button>
+      </div>
+    </div>
+    <div class="modal-body" style="padding-bottom:1rem">
+      <div class="scenario-save-row">
+        <input type="text" class="scenario-name-input" id="scenario-name-input"
+          placeholder="Name eingeben, z.B. Basisplan …" maxlength="40">
+        <button class="scenario-confirm-btn" onclick="saveScenario()">Speichern</button>
+      </div>
+      <div class="scenario-list" id="scenario-list"></div>
+      <div class="scenario-footer-note">Szenarien lokal im Browser gespeichert · max. 5 · kein Cloud-Sync</div>
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING MODAL -->
+<div class="modal-overlay hidden" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-step-label" id="modal-step-label">Schritt 1 von 4</div>
+        <div class="modal-title" id="modal-title">Willkommen</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <div class="modal-progress" id="modal-progress"></div>
+      <div class="modal-actions">
+        <button class="modal-skip" onclick="closeModal()">Überspringen</button>
+        <button class="modal-next" id="modal-next" onclick="nextStep()">Weiter →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="bottom-nav" role="navigation" aria-label="Navigation">
+  <div class="bottom-nav-inner">
+    <button class="bottom-nav-btn" data-tab="tab-settings" aria-label="Einstellungen">
+      <span class="nav-icon">⚙️</span>
+      <span>Eingaben</span>
+    </button>
+    <button class="bottom-nav-btn active" data-tab="tab-results" aria-label="Szenarien">
+      <span class="nav-icon">📊</span>
+      <span>Szenarien</span>
+    </button>
+    <button class="bottom-nav-btn" data-tab="tab-details" aria-label="Details">
+      <span class="nav-icon">🔍</span>
+      <span>Details</span>
+    </button>
+  </div>
+</nav>
+
+<script>
+  // Register service worker for PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+</script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

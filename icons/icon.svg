@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#181c27"/>
+  <rect x="0" y="0" width="512" height="6" fill="#c8a96e" rx="3"/>
+  <text x="256" y="290" font-family="Georgia,serif" font-size="200" font-weight="400" fill="#c8a96e" text-anchor="middle" dominant-baseline="middle">R</text>
+  <text x="256" y="420" font-family="Arial,sans-serif" font-size="60" font-weight="600" fill="#7a7d8a" text-anchor="middle">Rente</text>
+</svg>
