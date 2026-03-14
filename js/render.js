@@ -60,9 +60,78 @@ export function updateBreakeven(breakevenAge, age) {
   }
 }
 
-/** Update hints below inputs */
+/**
+ * Update RPJ0 hint and auto-fill suggestion.
+ * Call ONLY when Nettogehalt (inp-netto) or Abgabenquote (inp-abgaben) changes.
+ */
+export function updateHintRpj0(params) {
+  const { netto, abgaben } = params;
+  const hintBrutto = document.getElementById('hint-brutto');
+  const hintRpj0   = document.getElementById('hint-rpj0');
+  const rpj0El     = document.getElementById('inp-rpj0');
+  const slRpj0     = document.getElementById('sl-rpj0');
+
+  if (netto > 0 && abgaben > 0) {
+    const brutto       = netto / (1 - abgaben / 100);
+    const jahresbrutto = Math.round(brutto * 12);
+    const vorschlag    = Math.round((jahresbrutto / DURCHSCHNITTSENTGELT) * 100) / 100;
+    const capped       = Math.min(vorschlag, 2);
+    if (rpj0El) rpj0El.value = capped;
+    if (slRpj0) slRpj0.value = capped;
+    if (hintRpj0) {
+      hintRpj0.style.display = 'block';
+      hintRpj0.innerHTML =
+        `Brutto ~${fmt(Math.round(brutto))} €/Mo (${abgaben}% Abgaben)<br>` +
+        `<span style="color:var(--teal)">${fmt(Math.round(brutto))} × 12 ÷ ${fmt(DURCHSCHNITTSENTGELT)} ` +
+        `= <strong>${capped} Pkt/Jahr</strong></span>`;
+    }
+    if (hintBrutto) {
+      hintBrutto.style.display = 'block';
+      hintBrutto.textContent = `→ Brutto ~${fmt(Math.round(brutto))} €/Mo bei ${abgaben}% Abgaben`;
+      hintBrutto.style.color = 'var(--text-dim)';
+    }
+  } else {
+    if (rpj0El) { rpj0El.value = 0; }
+    if (slRpj0) { slRpj0.value = 0; }
+    if (hintRpj0)   hintRpj0.style.display   = 'none';
+    if (hintBrutto) hintBrutto.style.display = 'none';
+  }
+}
+
+/**
+ * Update RPJ1 hint and auto-fill suggestion.
+ * Call ONLY when Nebeneinkommen (inp-extra) or Abgabenquote (inp-abgaben) changes.
+ */
+export function updateHintRpj1(params) {
+  const { extra, abgaben } = params;
+  const hintRpj1 = document.getElementById('hint-rpj1');
+  const rpj1El   = document.getElementById('inp-rpj1');
+  const slRpj1   = document.getElementById('sl-rpj1');
+
+  if (extra > 0 && abgaben > 0) {
+    const brutto       = extra / (1 - abgaben / 100);
+    const jahresbrutto = Math.round(brutto * 12);
+    const vorschlag    = Math.round((jahresbrutto / DURCHSCHNITTSENTGELT) * 100) / 100;
+    const capped       = Math.min(vorschlag, 1);
+    if (rpj1El) rpj1El.value = capped;
+    if (slRpj1) slRpj1.value = capped;
+    if (hintRpj1) {
+      hintRpj1.style.display = 'block';
+      hintRpj1.innerHTML =
+        `Brutto ~${fmt(Math.round(brutto))} €/Mo (${abgaben}% Abgaben)<br>` +
+        `<span style="color:var(--teal)">${fmt(Math.round(brutto))} × 12 ÷ ${fmt(DURCHSCHNITTSENTGELT)} ` +
+        `= <strong>${capped} Pkt/Jahr</strong></span>`;
+    }
+  } else {
+    if (rpj1El) { rpj1El.value = 0; }
+    if (slRpj1) { slRpj1.value = 0; }
+    if (hintRpj1) hintRpj1.style.display = 'none';
+  }
+}
+
+/** Update all other hints (verbleib, ETF-Entnahme, Realrendite). NOT RPJ. */
 export function updateHints(params) {
-  const { netto, spar, extra, need, abgaben, retBrutto, tax, inf } = params;
+  const { netto, spar, extra, need, retBrutto, tax, inf } = params;
 
   // Verbleib nach Sparrate
   const hintVerbleib = document.getElementById('hint-verbleib');
@@ -75,32 +144,6 @@ export function updateHints(params) {
     } else {
       hintVerbleib.style.display = 'none';
     }
-  }
-
-  // Brutto hint + RPJ0 suggestion
-  const hintBrutto = document.getElementById('hint-brutto');
-  const hintRpj0   = document.getElementById('hint-rpj0');
-  const rpj0El     = document.getElementById('inp-rpj0');
-  const slRpj0     = document.getElementById('sl-rpj0');
-  if (netto > 0 && abgaben > 0) {
-    const brutto      = netto / (1 - abgaben / 100);
-    const vorschlag0  = Math.round((brutto * 12 / DURCHSCHNITTSENTGELT) * 100) / 100;
-    const capped0     = Math.min(vorschlag0, 2);
-    if (rpj0El) rpj0El.value = capped0;
-    if (slRpj0) slRpj0.value = capped0;
-    if (hintRpj0) {
-      hintRpj0.style.display = 'block';
-      hintRpj0.textContent = `→ Vorschlag: ${capped0} Pkt (Brutto ~${fmt(Math.round(brutto))} €/Mo)`;
-      hintRpj0.style.color = 'var(--teal)';
-    }
-    if (hintBrutto) {
-      hintBrutto.style.display = 'block';
-      hintBrutto.textContent = `→ Brutto ~${fmt(Math.round(brutto))} €/Mo bei ${abgaben}% Abgaben`;
-      hintBrutto.style.color = 'var(--text-dim)';
-    }
-  } else {
-    if (hintRpj0)  hintRpj0.style.display = 'none';
-    if (hintBrutto) hintBrutto.style.display = 'none';
   }
 
   // ETF Entnahme hint
@@ -120,30 +163,9 @@ export function updateHints(params) {
     }
   }
 
-  // RPJ1 suggestion from extra income
-  const hintRpj1 = document.getElementById('hint-rpj1');
-  const rpj1El   = document.getElementById('inp-rpj1');
-  const slRpj1   = document.getElementById('sl-rpj1');
-  if (extra > 0 && abgaben > 0) {
-    const extraBrutto = extra / (1 - abgaben / 100);
-    const vorschlag   = Math.round((extraBrutto * 12 / DURCHSCHNITTSENTGELT) * 100) / 100;
-    const capped      = Math.min(vorschlag, 1);
-    if (rpj1El) rpj1El.value = capped;
-    if (slRpj1) slRpj1.value = capped;
-    if (hintRpj1) {
-      hintRpj1.style.display = 'block';
-      hintRpj1.textContent = `→ Vorschlag: ${capped} Pkt (Brutto ~${fmt(Math.round(extraBrutto))} €/Mo)`;
-      hintRpj1.style.color = 'var(--teal)';
-    }
-  } else {
-    if (rpj1El) rpj1El.value = 0;
-    if (slRpj1) slRpj1.value = 0;
-    if (hintRpj1) hintRpj1.style.display = 'none';
-  }
-
   // Net return hint
-  const netRet  = retBrutto * (1 - tax / 100);             // in %
-  const realRet = ((1 + netRet / 100) / (1 + inf) - 1) * 100; // inf is already decimal
+  const netRet  = retBrutto * (1 - tax / 100);
+  const realRet = ((1 + netRet / 100) / (1 + inf) - 1) * 100;
   const hintReal = document.getElementById('hint-realrendite');
   if (hintReal) {
     hintReal.style.display = 'block';
@@ -311,6 +333,7 @@ export function renderVerif(data) {
   const etf0 = etf0raw ?? 0;
 
   const blocks = [
+    // ── Phase 0 (gold) ────────────────────────────────────────────────────────
     {
       title: 'Phase 0 · ETF bei Übergangsphase',
       color: 'var(--accent)',
@@ -320,63 +343,68 @@ export function renderVerif(data) {
         [`Sparrate ${fmtV(spar)} €/Mo`, `+ ca. ${fmtV(ret>0 ? spar*12*(Math.pow(1+ret,yearsToRetire)-1)/ret : spar*12*yearsToRetire)} €`],
         [`= ETF bei Übergangsphase (nominal)`, `${fmtV(etfRetireNom)} €`, true],
       ],
-      hint: 'Einmalzahlungen separat hinzugefügt'
+      hint: 'Einmalzahlungen werden zusätzlich aufaddiert'
     },
     {
       title: 'Phase 0 · GRV-Punkte',
-      color: 'var(--purple)',
+      color: 'var(--accent)',
       steps: [
         [`Punkte heute + Phase 0`, `${fmtV(rpAtRetire,1)} Pkt bei Übergangsphase`, true],
         [`+ ${yearsTo67} J. Phase 1`, `+ ${fmtV(yearsTo67*(rpj1??0),1)} Pkt`],
         [`= Punkte bei 67`, `${fmtV(rpAt67,1)} Pkt`, true],
+      ],
+      hint: 'Rentenpunktwert 2025: 40,79 € × 1,5% Wachstum p.a.'
+    },
+    // ── Phase 1 (teal/grün) ───────────────────────────────────────────────────
+    {
+      title: 'Phase 1 · Monatliche Lücke',
+      color: 'var(--teal)',
+      steps: [
+        [`Monatsbedarf Phase 1 (real, heute €)`, `${fmtV(need)} €/Mo`],
+        [`Kaufkraft bei Übergangsphase (nominal)`, `${fmtV(kaufNomRetire)} €/Mo`],
+        [`− Nebeneinkommen (nominal)`, `− ${fmtV(extra * Math.pow(1+inf, yearsToRetire))} €/Mo`],
+        lueckeNomRetire > 0
+          ? [`= Lücke → monatlich aus ETF entnehmen`, `${fmtV(lueckeNomRetire)} €/Mo`, true]
+          : [`= Überschuss → monatlich ins ETF`, `${fmtV(-lueckeNomRetire)} €/Mo`, true],
+      ],
+      hint: `Real (heutige €): ${fmtV(Math.abs(lueckeReal))} €/Mo · Entnahmen wachsen mit Inflation`
+    },
+    // ── Phase 2 (lila) ────────────────────────────────────────────────────────
+    {
+      title: 'Phase 2 · Benötigtes Kapital bei 67',
+      color: 'var(--purple)',
+      steps: [
+        [`Monatsbedarf ab 67 (real)`, `${fmtV(need2)} €/Mo`],
+        [`− GRV netto real (heutige €)`, `− ${fmtV(grvNettoReal)} €/Mo`],
+        [`= Rentenlücke real`, `${fmtV(rentenlueckeRealMonth)} €/Mo · ${fmtV(rentenlueckeRealMonth*12)} €/J.`, true],
+        ohne
+          ? [`÷ Entnahmerate ${fmtV(ent*100,1)}%`, `= ${fmtV(rentenlueckeRealMonth*12/ent)} €`]
+          : [`Barwert über ${yearsP2} J. (reale Nettorendite)`, `= ${fmtV(cap2_at67_real)} €`],
+        [`= Benötigtes Kapital (real, heute €)`, `${fmtV(cap2_at67_real)} €`, true],
+        [`= Benötigtes Kapital (nominal bei 67)`, `${fmtV(cap2_at67_nom)} €`],
       ]
     },
     {
       title: 'Phase 2 · GRV netto bei 67',
       color: 'var(--purple)',
       steps: [
-        [`${fmtV(rpAt67,1)} Pkt × ${fmtV(rpWert67,2)} €/Pkt`, `= ${fmtV(grvBruttoNom)} € brutto`],
-        [`× 89,5% (nach KV + PV)`, `= ${fmtV(grvBruttoNom*GRV_NET_PCT)} €`],
-        ...(zusatz > 0 ? [[`+ Zusatzrente`, `+ ${fmtV(zusatz)} €`]] : []),
-        [`= Rente gesamt netto/Mo`, `${fmtV(grvNettoNom)} €`, true],
-        [`Real (heute €)`, `${fmtV(grvNettoReal)} €/Mo`],
-      ]
-    },
-    {
-      title: 'Phase 1 · Monatliche Lücke',
-      color: 'var(--teal)',
-      steps: [
-        [`Kaufkraft bei Übergangsphase (nominal)`, `${fmtV(kaufNomRetire)} €/Mo`],
-        [`− Nebeneinkommen (nominal)`, `− ${fmtV(extra * Math.pow(1+inf, yearsToRetire))} €/Mo`],
-        lueckeNomRetire > 0
-          ? [`= Lücke → aus ETF entnehmen`, `${fmtV(lueckeNomRetire)} €/Mo`, true]
-          : [`= Überschuss → ins ETF`, `${fmtV(-lueckeNomRetire)} €/Mo`, true],
+        [`${fmtV(rpAt67,1)} Pkt × ${fmtV(rpWert67,2)} €/Pkt (Rentenwert bei 67)`, `= ${fmtV(grvBruttoNom)} € brutto`],
+        [`× 89,5% (nach KV + PV-Beitrag)`, `= ${fmtV(grvBruttoNom*GRV_NET_PCT)} €`],
+        ...(zusatz > 0 ? [[`+ Zusatzrente (nominal)`, `+ ${fmtV(zusatz)} €`]] : []),
+        [`= Rente gesamt netto/Mo (nominal)`, `${fmtV(grvNettoNom)} €`, true],
+        [`Real (heute €, inflationsbereinigt)`, `${fmtV(grvNettoReal)} €/Mo`],
       ],
-      hint: `Real: ${fmtV(Math.abs(lueckeReal))} €/Mo (heutige €)`
-    },
-    {
-      title: 'Phase 2 · Benötigtes Kapital bei 67',
-      color: 'var(--blue)',
-      steps: [
-        [`Monatsbedarf ab 67 (real)`, `${fmtV(need2)} €/Mo`],
-        [`− GRV netto real`, `− ${fmtV(grvNettoReal)} €/Mo`],
-        [`= Rentenlücke real`, `${fmtV(rentenlueckeRealMonth)} €/Mo · ${fmtV(rentenlueckeRealMonth*12)} €/J.`, true],
-        ohne
-          ? [`÷ Entnahmerate ${fmtV(ent*100,1)}%`, `= ${fmtV(rentenlueckeRealMonth*12/ent)} €`]
-          : [`Barwert über ${yearsP2} J.`, `= ${fmtV(cap2_at67_real)} €`],
-        [`= Benötigtes Kapital (real)`, `${fmtV(cap2_at67_real)} €`, true],
-        [`= Benötigtes Kapital (nominal bei 67)`, `${fmtV(cap2_at67_nom)} €`],
-      ]
+      hint: `Deckt ${fmtV(need2>0?Math.min(100,(grvNettoReal/need2)*100):0,0)}% des Bedarfs in Phase 2`
     },
     {
       title: 'ETF-Restwert bei 67 · Kern-Check',
-      color: 'var(--green)',
+      color: 'var(--purple)',
       steps: [
-        [`ETF bei Übergangsphase`, `${fmtV(etfRetireNom)} €`],
-        [`Wächst ${yearsTo67} J. mit ${fmtV(ret*100,1)}%`, `× ${fmtV(Math.pow(1+ret,yearsTo67),3)}`],
-        [`− Entnahmen Phase 1 (mit Inflation)`, `− ...`],
+        [`ETF bei Übergangsphase (nominal)`, `${fmtV(etfRetireNom)} €`],
+        [`Wächst ${yearsTo67} J. mit ${fmtV(ret*100,1)}% Rendite`, `× ${fmtV(Math.pow(1+ret,yearsTo67),3)}`],
+        [`− Entnahmen Phase 1 (wachsen mit Inflation)`, `− ...`],
         [`= ETF-Restwert bei 67 (nominal)`, `${fmtV(etfRes67Nom)} €`, true],
-        [`= ETF-Restwert bei 67 (real)`, `${fmtV(etfRes67Real)} €`, true],
+        [`= ETF-Restwert bei 67 (real, heute €)`, `${fmtV(etfRes67Real)} €`, true],
         [`Benötigtes Kapital Phase 2 (nominal)`, `${fmtV(cap2_at67_nom)} €`],
         etfRes67Nom >= cap2_at67_nom
           ? [`✓ Überschuss`, `+${fmtV(etfRes67Nom - cap2_at67_nom)} €`, true]
