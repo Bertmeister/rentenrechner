@@ -32,6 +32,7 @@
         <div class="subtitle" id="subtitle"></div>
       </div>
       <div class="header-actions">
+        <button class="help-btn" onclick="resetToDefaults()" title="Alle Eingaben auf Standard zurücksetzen">↺</button>
         <button class="help-btn" onclick="openScenarioModal()" title="Szenarien speichern &amp; laden">💾</button>
         <button class="help-btn" onclick="openModal()" title="Hilfe &amp; Erklärung">?</button>
         <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">☀ Helles Design</button>
@@ -75,6 +76,14 @@
             <span class="input-unit">Pkt</span>
           </div>
           <input type="range" id="sl-rp" min="0" max="60" step="0.5" value="0">
+        </div>
+        <div class="input-group">
+          <span class="input-label" title="Vorläufiges Durchschnittsentgelt – wird jährlich vom Gesetzgeber angepasst. 2026: 51.944 €." style="cursor:help;border-bottom:1px dotted rgba(122,125,138,0.4)">Durchschnittsentgelt ⓘ</span>
+          <div class="input-row">
+            <input type="number" id="inp-durchschnittsentgelt" value="51944" min="30000" max="80000" step="100">
+            <span class="input-unit">€</span>
+          </div>
+          <input type="range" id="sl-durchschnittsentgelt" min="30000" max="80000" step="100" value="51944">
         </div>
         <div class="input-group">
           <span class="input-label">Nettogehalt/Monat</span>
@@ -163,6 +172,16 @@
           </div>
           <input type="range" id="sl-extra" min="0" max="3000" step="50" value="0">
           <div class="input-hint" id="hint-etf-entnahme" style="display:none"></div>
+        </div>
+        <div class="input-group" id="grp-minijob">
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.9rem;color:var(--text-dim)">
+            <input type="checkbox" id="chk-minijob" style="accent-color:var(--teal);width:1rem;height:1rem">
+            Nebeneinkommen ist Minijob (≤ 538 €/Mo)
+          </label>
+          <label id="lbl-aufstockung" style="display:none;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.82rem;color:var(--text-dim);padding-left:1.5rem;margin-top:0.3rem">
+            <input type="checkbox" id="chk-minijob-aufstockung" style="accent-color:var(--teal);width:0.9rem;height:0.9rem">
+            Mit Aufstockung auf vollen RV-Beitrag
+          </label>
         </div>
         <div class="input-group">
           <span class="input-label" title="~1 Punkt pro Jahr bei Durchschnittsverdienst." style="cursor:help;border-bottom:1px dotted rgba(122,125,138,0.4)">Rentenpunkte/Jahr ⓘ</span>
