@@ -3,7 +3,7 @@
  * Caches app shell for offline use
  */
 
-const CACHE_NAME = 'rentenplanung-v1';
+const CACHE_NAME = 'rentenplanung-v2';
 
 const APP_SHELL = [
   './',
