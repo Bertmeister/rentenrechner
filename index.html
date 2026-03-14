@@ -240,22 +240,6 @@
           <input type="range" id="sl-zusatz" min="0" max="5000" step="50" value="0">
           <div class="input-hint">Nominalwert bei 67 · bAV, Riester etc.</div>
         </div>
-        <div class="input-group" id="grp-life">
-          <span class="input-label">Lebenserwartung</span>
-          <div class="input-row">
-            <input type="number" id="inp-life" value="90" min="70" max="110" step="1">
-            <span class="input-unit">J.</span>
-          </div>
-          <input type="range" id="sl-life" min="70" max="110" step="1" value="90">
-        </div>
-        <div class="input-group" id="grp-ent">
-          <span class="input-label" title="Wieviel % des Kapitals du jährlich entnimmst. 3,5–4% gilt als nachhaltig (Trinity-Studie)." style="cursor:help;border-bottom:1px dotted rgba(122,125,138,0.4)">Entnahme % p.a. ⓘ</span>
-          <div class="input-row">
-            <input type="number" id="inp-ent" value="3.5" min="0.5" max="15" step="0.1">
-            <span class="input-unit">%</span>
-          </div>
-          <input type="range" id="sl-ent" min="0.5" max="15" step="0.1" value="3.5">
-        </div>
       </div>
 
       <!-- EINMALZAHLUNGEN -->
@@ -315,6 +299,22 @@
           <span class="toggle-option active" id="lbl-erhalt" style="font-size:0.75rem">Ohne Verzehr</span>
         </div>
         <div class="mode-badge" id="mode-badge">Kapital bleibt erhalten</div>
+        <div class="input-group" id="grp-life">
+          <span class="input-label">Lebenserwartung</span>
+          <div class="input-row">
+            <input type="number" id="inp-life" value="90" min="70" max="110" step="1">
+            <span class="input-unit">J.</span>
+          </div>
+          <input type="range" id="sl-life" min="70" max="110" step="1" value="90">
+        </div>
+        <div class="input-group" id="grp-ent">
+          <span class="input-label" title="Wieviel % des Kapitals du jährlich entnimmst. 3,5–4% gilt als nachhaltig (Trinity-Studie)." style="cursor:help;border-bottom:1px dotted rgba(122,125,138,0.4)">Entnahme % p.a. ⓘ</span>
+          <div class="input-row">
+            <input type="number" id="inp-ent" value="3.5" min="0.5" max="15" step="0.1">
+            <span class="input-unit">%</span>
+          </div>
+          <input type="range" id="sl-ent" min="0.5" max="15" step="0.1" value="3.5">
+        </div>
       </div>
 
     </div><!-- /inputs-panel -->

@@ -18,6 +18,17 @@ html { font-size: 16px; }
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* ── SCROLLBARS ────────────────────────────────────────────────────────────── */
+/* Firefox */
+* { scrollbar-width: thin; scrollbar-color: var(--text-dim) var(--border); }
+
+/* WebKit / Blink */
+::-webkit-scrollbar              { width: 6px; height: 6px; }
+::-webkit-scrollbar-track        { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb        { background: var(--text-dim); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover  { background: var(--accent); }
+::-webkit-scrollbar-corner       { background: var(--border); }
+
 body {
   background: var(--bg);
   color: var(--text);
